@@ -124,6 +124,35 @@ class ParametricTorus
     const double m_minor_radius;
 };
 
+class ParametricHorn
+{
+  public:
+    ParametricHorn(const double alpha, const double beta, const double gamma, const double twists)
+      : m_alpha(alpha)
+      , m_beta(beta)
+      , m_gamma(gamma)
+      , m_twists(twists)
+    {
+    }
+
+    GVector3 evaluate(const double u, const double v) const
+    {
+        const double a = TwoPi * u;
+        const double b =  TwoPi * v;
+
+        return GVector3(
+            m_alpha * (1 - b / (TwoPi)) * cos(m_twists * b) * (1 + cos(a)) + m_gamma * cos(m_twists * b),
+            m_alpha * (1 - b / (TwoPi)) * sin(m_twists * b) * (1 + cos(a)) + m_gamma * sin(m_twists * b),
+            m_alpha * (1 - b / (TwoPi)) * sin(a) + m_beta * b / (TwoPi));
+    }
+
+  private:
+    const double m_alpha;
+    const double m_beta;
+    const double m_gamma;
+    const double m_twists;
+};
+
 template <typename ParametricSurface>
 void create_vertices(MeshObject& mesh, ParametricSurface surface, const size_t resolution_u, const size_t resolution_v)
 {
@@ -266,6 +295,15 @@ auto_release_ptr<MeshObject> create_primitive_mesh(const char* name, const Param
         }
         ParametricTorus torus(major_radius, minor_radius);
         create_primitive(*mesh, torus, resolution_u, resolution_v);
+    }
+    else if (strcmp(primitive_type, "horn") == 0)
+    {
+        const double alpha = params.get_optional<double>("alpha", 0.15);
+        const double beta = params.get_optional<double>("beta", 1.0);
+        const double gamma = params.get_optional<double>("gamma", 0.1);
+        const double twists = params.get_optional<double>("twists", 2.0);
+        ParametricHorn horn(alpha, beta, gamma, twists);
+        create_primitive(*mesh, horn, resolution_u, resolution_v);
     }
     else
     {
