@@ -41,9 +41,15 @@
 #include "foundation/math/vector.h"
 #include "foundation/platform/types.h"
 
+// SeExpr includes.
+#ifdef APPLESEED_WITH_DISNEY_MATERIAL
+#include "SeExpression.h"
+#endif
+
 // Standard headers.
 #include <algorithm>
 #include <cmath>
+#include <string>
 
 using namespace foundation;
 using namespace std;
@@ -124,8 +130,85 @@ class ParametricTorus
     const double m_minor_radius;
 };
 
+#ifdef APPLESEED_WITH_DISNEY_MATERIAL
+class ParametricSeExprSurface
+{
+    class Expression
+      : public SeExpression
+    {
+      public:
+        Expression()
+        {
+        }
+
+        explicit Expression(const string& expr)
+          : SeExpression(expr, true)
+        {
+        }
+
+        SeExprVarRef* resolveVar(const string& name) const APPLESEED_OVERRIDE
+        {
+            assert(!name.empty());
+
+            if (name[0] == 'u')
+                return &m_u;
+
+            if (name[0] == 'v')
+                return &m_v;
+
+            return 0;
+        }
+
+        GVector3 evaluate(const double u, const double v) const
+        {
+            m_u.m_val = u;
+            m_v.m_val = v;
+            const SeVec3d result = SeExpression::evaluate();
+            return GVector3(result[0], result[1], result[2]);
+        }
+
+      private:
+        struct Var
+          : public SeExprScalarVarRef
+        {
+            double m_val;
+
+            Var() {}
+
+            explicit Var(const double val)
+              : m_val(val)
+            {
+            }
+
+            virtual void eval(const SeExprVarNode* /*node*/, SeVec3d& result) APPLESEED_OVERRIDE
+            {
+                result[0] = m_val;
+            }
+        };
+
+        mutable Var m_u;
+        mutable Var m_v;
+    };
+
+  public:
+    explicit ParametricSeExprSurface(const std::string& expression)
+      : m_expression(expression)
+    {
+    }
+
+    GVector3 evaluate(const double u, const double v) const
+    {
+        return m_expression.evaluate(u, v);
+    }
+
+  private:
+    Expression m_expression;
+};
+#endif
+
+
 template <typename ParametricSurface>
-void create_vertices(MeshObject& mesh, ParametricSurface surface, const size_t resolution_u, const size_t resolution_v)
+void create_vertices(MeshObject& mesh, const ParametricSurface& surface, const size_t resolution_u, const size_t resolution_v)
 {
     const size_t num_points = resolution_u * resolution_v;
 
@@ -267,6 +350,14 @@ auto_release_ptr<MeshObject> create_primitive_mesh(const char* name, const Param
         ParametricTorus torus(major_radius, minor_radius);
         create_primitive(*mesh, torus, resolution_u, resolution_v);
     }
+#ifdef APPLESEED_WITH_DISNEY_MATERIAL
+    else if (strcmp(primitive_type, "expression") == 0)
+    {
+        const string expression = params.get_optional<string>("expression", "");
+        ParametricSeExprSurface surf(expression);
+        create_primitive(*mesh, surf, resolution_u, resolution_v);
+    }
+#endif
     else
     {
         RENDERER_LOG_ERROR("Unknown primitive type.");
