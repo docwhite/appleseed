@@ -1249,6 +1249,7 @@ source_group ("renderer\\meta\\tests" FILES
 set (renderer_modeling_bsdf_sources
     renderer/modeling/bsdf/ashikhminbrdf.cpp
     renderer/modeling/bsdf/ashikhminbrdf.h
+    renderer/modeling/bsdf/backfacingpolicy.h
     renderer/modeling/bsdf/bsdf.cpp
     renderer/modeling/bsdf/bsdf.h
     renderer/modeling/bsdf/bsdfblend.cpp
@@ -1288,6 +1289,8 @@ set (renderer_modeling_bsdf_sources
     renderer/modeling/bsdf/specularbrdf.h
     renderer/modeling/bsdf/specularbtdf.cpp
     renderer/modeling/bsdf/specularbtdf.h
+    renderer/modeling/bsdf/thinglassbsdf.cpp
+    renderer/modeling/bsdf/thinglassbsdf.h
     renderer/modeling/bsdf/velvetbrdf.cpp
     renderer/modeling/bsdf/velvetbrdf.h
 )
